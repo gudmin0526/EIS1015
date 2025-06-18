@@ -17,5 +17,6 @@ void On_IR_Emitter(uint8_t mask_P5, uint8_t mask_P9);
 void Off_IR_Emitter(uint8_t mask_P5, uint8_t mask_P9);
 void Read_IR_Sensor(uint8_t sensors[8]);
 void Print_IR_Sensor(uint8_t sensors[8]);
+uint8_t Get_IR_Sensor_Value(void);
 
 #endif /* IR_IR_H_ */

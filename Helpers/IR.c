@@ -46,6 +46,18 @@ void Read_IR_Sensor(uint8_t sensors[8]) {
         sensors[i] = (P7->IN & (1 << i)) ? 1 : 0;
 }
 
+uint8_t Get_IR_Sensor_Value(void) {
+    On_IR_Emitter(0x0F, 0x0F);
+    P7->DIR = 0xFF;
+    P7->OUT = 0xFF;
+    Clock_Delay1us(10);
+    P7->DIR = 0x00;
+    Clock_Delay1us(1000);
+    Off_IR_Emitter(0x0F, 0x0F);
+    return P7->IN & 0xFF;
+
+}
+
 void Print_IR_Sensor(uint8_t sensors[8]) {
     int i;
     printf("sensors: [");

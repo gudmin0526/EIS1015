@@ -20,10 +20,10 @@ void Switch_Init(void) {
     P1->OUT |= 0x12;
 }
 
-int Read_Switch1(void) {
-    return (P1->IN & 0x02) == 0;
+int Read_Switch_Right(void) {
+    return (P1->IN & 0x02);
 }
 
-int Read_Switch2(void) {
-    return (P1->IN & 0x10) == 0;
+int Read_Switch_Left(void) {
+    return (P1->IN & 0x10);
 }

@@ -22,6 +22,13 @@ Helpers/Motor.obj: C:/ti/ccs1270/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h
 Helpers/Motor.obj: C:/ti/ccs1270/ccs/ccs_base/arm/include/system_msp432p401r.h
 Helpers/Motor.obj: ../Helpers/Timer.h
 Helpers/Motor.obj: ../Helpers/Clock.h
+Helpers/Motor.obj: ../Helpers/IR.h
+Helpers/Motor.obj: ../Helpers/Clock.h
+Helpers/Motor.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdio.h
+Helpers/Motor.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdarg.h
+Helpers/Motor.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h
+Helpers/Motor.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h
+Helpers/Motor.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h
 
 ../Helpers/Motor.c:
 
@@ -66,4 +73,18 @@ C:/ti/ccs1270/ccs/ccs_base/arm/include/system_msp432p401r.h:
 ../Helpers/Timer.h:
 
 ../Helpers/Clock.h:
+
+../Helpers/IR.h:
+
+../Helpers/Clock.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdio.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdarg.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h:
 

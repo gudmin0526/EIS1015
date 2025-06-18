@@ -29,6 +29,9 @@ main.obj: ../Helpers/IR.h
 main.obj: ../Helpers/Clock.h
 main.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdio.h
 main.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdarg.h
+main.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h
+main.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h
+main.obj: C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h
 main.obj: ../Helpers/Switch.h
 
 ../main.c:
@@ -88,6 +91,12 @@ C:/ti/ccs1270/ccs/ccs_base/arm/include/system_msp432p401r.h:
 C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdio.h:
 
 C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdarg.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h:
+
+C:/ti/ccs1270/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h:
 
 ../Helpers/Switch.h:
 

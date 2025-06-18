@@ -8,147 +8,496 @@
 #include ".\Helpers\Switch.h"
 #include <stdio.h>
 
-#define MAX_PATH_LENGTH 500
+#define MAX_STACK_SIZE 128
 
 /**
  * main.c
  */
 
 
-/**
- * @brief Types of nodes encountered during maze navigation.
- *
- * These node types guide the robot in making directional decisions (L/S/R),
- * performing backtracking (B), or continuing straight through non-decision paths.
- *
- * - Node_Branch, Node_LeftCorner, Node_RightCorner:
- *     → Decision points where the robot must choose a direction.
- *       Push 'L', 'S', or 'R' to the stack accordingly.
- *
- * - Node_Straight:
- *     → Straight segment. No direction is pushed to the stack.
- *
- * - Node_None:
- *     → Dead-end (no valid path). Push 'B' (Backtrack) to the stack.
- *
- * - Node_End:
- *     → Final goal. Used to detect maze completion.
- */
 typedef enum {
-    Node_None = 0,
-    Node_End,
-    Node_Straight,
-    Node_Branch,
-    Node_LeftCorner,
-    Node_RightCorner,
-} NodeType;
-
-
-typedef enum {
-    Dir_L = 0,
-    Dir_S,
+    Dir_S = 0,
+    Dir_L,
     Dir_R,
-    Dir_B,
 } Direction;
 
 
-Direction path_stack[MAX_PATH_LENGTH];
-int16_t stack_top = -1;
+typedef enum {
+    Node_Straight = 0,
+    Node_Wall,
+    Node_End,
+    Node_Branch,
+    Node_Right,
+    Node_Left,
+} NodeType;
+
+
+NodeType node_map[256] = {
+    [0b00000000] = Node_Wall,
+    [0b10000000] = Node_Wall,
+    [0b11000000] = Node_Wall,
+    [0b11100000] = Node_Wall,
+    [0b00000001] = Node_Wall,
+    [0b00000011] = Node_Wall,
+    [0b00000111] = Node_Wall,
+    [0b10000001] = Node_Wall,
+    [0b10000010] = Node_Wall,
+    [0b01000001] = Node_Wall,
+    [0b11000011] = Node_Wall,
+    [0b00001101] = Node_Right,   //  13
+    [0b00001111] = Node_Right,   //  15
+    [0b00011101] = Node_Right,   //  29
+    [0b00011110] = Node_Right,   //  30
+    [0b00011111] = Node_Right,   //  31
+    [0b00101111] = Node_Right,   //  47
+    [0b00111101] = Node_Right,   //  61
+    [0b00111110] = Node_Right,   //  62
+    [0b00111111] = Node_Right,   //  63
+    [0b11011111] = Node_Right,   // 223
+    [0b11001111] = Node_Right,   // 207
+    [0b10001111] = Node_Right,   // 143
+    [0b10011111] = Node_Right,   // 159
+    [0b01011111] = Node_Right,   //  95
+    [0b01110000] = Node_Left,    // 112
+    [0b01110100] = Node_Left,    // 116
+    [0b01111000] = Node_Left,
+    [0b01111100] = Node_Left,    // 124
+    [0b11110100] = Node_Left,    // 244
+    [0b11111000] = Node_Left,    // 248
+    [0b11111100] = Node_Left,    // 252
+    [0b11101100] = Node_Left,    // 236
+    [0b11110000] = Node_Left,    // 240
+    [0b01111101] = Node_Branch,  // 125
+    [0b01111111] = Node_Branch,  // 127
+    [0b11111001] = Node_Branch,  // 249
+    [0b11111010] = Node_Branch,  // 250
+    [0b11111011] = Node_Branch,  // 251
+    [0b11111101] = Node_Branch,  // 253
+    [0b11111110] = Node_Branch,  // 254
+    [0b11111111] = Node_Branch,  // 255
+    [0b01111110] = Node_Branch,  // 126
+};
+
+uint8_t sensors[8];
+NodeType type;
+
+Direction dir_stack[MAX_STACK_SIZE];
+NodeType node_stack[MAX_STACK_SIZE];
+int top = -1;
 uint8_t backtrack_count = 0;
 
 
-/**
- * @brief Classifies the current node type using 8 IR sensor inputs.
- *
- * This function determines the topological type of the current location
- * (e.g., straight path, corner, branch, dead-end) to guide maze navigation.
- * It is designed to support direction logging (L/S/R/B) for optimal path extraction.
- *
- * Node detection logic:
- * - Node_Branch       : Both left and right sensors detect line → junction
- * - Node_End          : Front line strongly detected, no left/right → dead-end
- * - Node_LeftCorner   : Only left-side sensors detect line → left turn
- * - Node_RightCorner  : Only right-side sensors detect line → right turn
- * - Node_Straight     : Only front-center sensors detect line → straight path
- * - Node_None         : No path detected → backtrack needed
- *
- * @param sensors An array of 8 binary IR sensor values (1 = line, 0 = no line)
- * @return NodeType corresponding to the detected topology
- */
-NodeType Detect_NodeType(uint8_t sensors[8]) {
-    uint8_t left  = sensors[0] || sensors[1];
-    uint8_t right = sensors[6] || sensors[7];
-    uint8_t front_left  = sensors[2] && sensors[3] && sensors[4];
-    uint8_t front_right = sensors[3] && sensors[4] && sensors[5];
-    uint8_t front_center = sensors[3] || sensors[4];
-    uint8_t front_strong = front_left || front_right;
-
-    if (left && right)
-        return Node_Branch;
-    if (front_strong && !left && !right)
-        return Node_End;
-    if (left)
-        return Node_LeftCorner;
-    if (right)
-        return Node_RightCorner;
-    if (front_center)
-        return Node_Straight;
-    return Node_None;
+void Stack_Init_With_Answer() {
+    node_stack[++top] = Node_Branch; // 1
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Right; // 2
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Left; // 3
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Right; // 4
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Branch; // 5
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Right; // 6
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Right; // 7
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Branch; // 8
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Right; // 9
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Branch; // 10
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Right; // 11
+    dir_stack[top] = Dir_S;
+    node_stack[++top] = Node_Left; // 12
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Right; // 13
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Right; // 14
+    dir_stack[top] = Dir_S;
+    node_stack[++top] = Node_Left; // 15
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Branch; // 16
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Right; // 17
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Left; // 18
+    dir_stack[top] = Dir_L;
+    node_stack[++top] = Node_Branch; // 19
+    dir_stack[top] = Dir_R;
+    node_stack[++top] = Node_Left; // 20
+    dir_stack[top] = Dir_L;
 }
 
 
-/**
- * @brief Navigates a maze using the left-hand rule based on IR sensor input.
- *
- * If a line is detected on the left side (sensors 0–2), turn left 90 degrees.
- * If a line is detected in the front (sensors 3–4), move forward.
- * If a line is detected on the right side (sensors 5–7), turn right 90 degrees.
- * If no line is detected on any side, turn around (180 degrees).
- *
- * @param sensors an array of 8 IR sensor readings (0 = no line, 1 = line detected)
- */
-void Maze_Navigate(NodeType type) {
-    if (type == Node_End)
-        return;
-    if (type == Node_Branch || type == Node_LeftCorner) {
-        if (backtrack_co)
-        path_stack[stack_top++] = Dir_L;
-        Rotate_Left(90);
-        Motor_Stop(10);
-        Move_Forward(300);
-        Motor_Stop(10);
-    } else if (type == Node_RightCorner) {
-        path_stack[stack_top++] = Dir_S;
-        is_right = 1;
-        Move_Forward(300);
-        Motor_Stop(10);
-    } else if (type == Node_Straight) {
-        Move_Forward(300);
-        Motor_Stop(10);
-    } else {
-        path_stack[stack_top++] = Dir_B;
-        while (path_stack[stack_top] != Dir_S || path_stack[stack_top] != Dir_L) {
-            backtrack_count++;
-            stack_top--;
-        }
-        path_stack[stack_top] = Dir_R;
+NodeType Detect_NodeType(uint8_t sensors[8]) {
+    return node_map[Get_IR_Sensor_Value()];
+}
 
-        Move_Backward(300);
-        Motor_Stop(10);
-        Rotate_Left(90);
-        Motor_Stop(10);
-        Rotate_Left(90);
-        Motor_Stop(10);
+
+void Toggle_Led_By_NodeType(uint8_t sensors[8]) {
+    type = Detect_NodeType(sensors);
+    uint8_t color = 0;
+    if (type == Node_Branch)
+        color = LED_RED;
+    else if (type == Node_Left)
+        color = LED_BLUE;
+    else if (type == Node_Right)
+        color = LED_GREEN;
+    else
+        color = LED_RED | LED_BLUE;
+
+    int i;
+    for (i = 0; i < 8; i++) {
+        if (sensors[i])
+            TurnOn_Led(color);
+        else
+            TurnOn_Led(LED_WHITE);
+        Clock_Delay1ms(500);
+        TurnOff_Led();
+        Clock_Delay1ms(500);
+    }
+    Clock_Delay1ms(1000);
+}
+
+
+void Process_Backtrack_Branch(void) {
+    Direction _dir = dir_stack[top];
+    if (_dir == Dir_L) {
+        while (type != Node_Left) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        Rotate_Left90(sensors);
+        Rotate_Left90(sensors);
+        Motor_Stop(100);
+
+        while (type == Node_Wall) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+
+        Move_Backward(1500, 1500, 100);
+        Motor_Stop(100);
+
+        while (type != Node_Right) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        while (type == Node_Right) {
+            if (type == Node_Straight)
+                Align_And_Move_Forward(sensors);
+            else
+                Move_Forward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        dir_stack[top] = Dir_R;
+    } else if (_dir == Dir_R) {
+        top--;
     }
 }
 
 
-void task(void) {
-    uint8_t sensors[8];
+void Process_Backtrack_Left(void) {
+    Direction _dir = dir_stack[top];
+    if (_dir == Dir_L) {
+        while (type != Node_Branch && type != Node_Left) {
+            Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        Move_Forward(1500, 1500, 750);
+        Motor_Stop(100);
+
+        Rotate_Right90(sensors);
+        Motor_Stop(100);
+
+        dir_stack[top] = Dir_S;
+    } else if (_dir == Dir_S) {
+        while (type != Node_Left) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        while (type == Node_Left) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+        top--;
+    }
+}
+
+
+void Process_Backtrack_Right(void) {
+    Direction _dir = dir_stack[top];
+    if (_dir == Dir_R) {
+        while (type != Node_Branch) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        while (type == Node_Branch) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        Rotate_Left90(sensors);
+
+        top--;
+        while (type != node_stack[top]) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+    } else if (_dir == Dir_S) {
+        while (type != Node_Right) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        while (type == Node_Right) {
+            if (type == Node_Straight)
+                Align_And_Move_Backward(sensors);
+            else
+                Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+
+        Move_Forward(1500, 1500, 650);
+        Motor_Stop(100);
+
+        Rotate_Right90(sensors);
+        Motor_Stop(100);
+
+        while (type == Node_Wall) {
+            Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+
+        dir_stack[top] = Dir_R;
+    }
+}
+
+
+void Escape_And_Memorize_Maze(uint8_t sensors[8]) {
+    while (backtrack_count > 0) {
+        if (node_stack[top] == Node_Branch)
+            Process_Backtrack_Branch();
+        else if (node_stack[top] == Node_Left)
+            Process_Backtrack_Left();
+        else if (node_stack[top] == Node_Right)
+            Process_Backtrack_Right();
+        backtrack_count--;
+    }
+
+    type = Detect_NodeType(sensors);
+    int cur;
+
+    switch (type) {
+    case Node_Branch:
+        while (type == Node_Branch) {
+            Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Move_Forward(1500, 1500, 750);
+        Motor_Stop(100);
+
+        Rotate_Left90(sensors);
+        Motor_Stop(100);
+
+        if (type == Node_Wall)
+            Move_Backward(1000, 1000, 1000);
+
+        node_stack[++top] = Node_Branch;
+        dir_stack[top] = Dir_L;
+        break;
+    case Node_Left:
+        while (type == Node_Left) {
+            Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Move_Forward(1500, 1500, 650);
+        Motor_Stop(100);
+
+        Rotate_Left90(sensors);
+        Motor_Stop(100);
+
+        if (type == Node_Wall)
+            Move_Backward(1000, 1000, 1000);
+
+        node_stack[++top] = Node_Left;
+        dir_stack[top] = Dir_L;
+        break;
+    case Node_Right:
+        Move_Forward(1500, 1500, 200);
+        Motor_Stop(100);
+
+        node_stack[++top] = Node_Right;
+        dir_stack[top] = Dir_S;
+        break;
+    case Node_Straight:
+        while (type == Node_Straight) {
+            Align_And_Move_Forward(sensors);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+        break;
+    case Node_Wall:
+        cur = top;
+        backtrack_count++;
+        while (cur >= 0 &&
+                !((node_stack[cur] == Node_Left && dir_stack[cur] == Dir_L)   ||
+                  (node_stack[cur] == Node_Branch && dir_stack[cur] == Dir_L) ||
+                  (node_stack[cur] == Node_Right && dir_stack[cur] == Dir_S))) {
+            backtrack_count++;
+            cur--;
+        }
+
+        while (type == Node_Wall) {
+            Move_Backward(1500, 1500, 30);
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(100);
+        break;
+    case Node_End:
+    default:
+        TurnOff_Led();
+        break;
+    }
+}
+
+
+void Phase_One(void) {
+    Read_IR_Sensor(sensors);
+    type = Detect_NodeType(sensors);
+
+    /* --- Maze Escape and Memorize --- */
     while (1) {
         Read_IR_Sensor(sensors);
-        NodeType type = Detect_NodeType(sensors);
-        Maze_Navigate(type);
+        Escape_And_Memorize_Maze(sensors);
+        Clock_Delay1ms(10);
+    }
+}
+
+
+void Phase_Two(void) {
+    int i;
+    for (i = 0; i <= top; i++) {
+        Read_IR_Sensor(sensors);
+        type = Detect_NodeType(sensors);
+
+        while (type != node_stack[i]) {
+            if (type == Node_Straight) {
+                Align_And_Move_Forward(sensors);
+            } else if (type == Node_Wall) {
+                Move_Backward(1000, 1000, 1000);
+                Motor_Stop(100);
+            } else {
+                Move_Forward(1500, 1500, 30);
+            }
+            Read_IR_Sensor(sensors);
+            type = Detect_NodeType(sensors);
+        }
+        Motor_Stop(500);
+
+        switch (dir_stack[i]) {
+        case Dir_L:
+            TurnOn_Led(LED_RED);
+            while (type == node_stack[i]) {
+                Move_Backward(1500, 1500, 30);
+                Read_IR_Sensor(sensors);
+                type = Detect_NodeType(sensors);
+            }
+            Move_Forward(1500, 1500, 750);
+            Motor_Stop(500);
+
+            Rotate_Left90(sensors);
+            Motor_Stop(500);
+            break;
+        case Dir_R:
+            TurnOn_Led(LED_BLUE);
+            while (type == node_stack[i]) {
+                Move_Backward(1500, 1500, 30);
+                Read_IR_Sensor(sensors);
+                type = Detect_NodeType(sensors);
+            }
+            Move_Forward(1500, 1500, 750);
+            Motor_Stop(500);
+
+            Rotate_Right90(sensors);
+            Motor_Stop(500);
+            break;
+        case Dir_S:
+            TurnOn_Led(LED_GREEN);
+            while (type == node_stack[i]) {
+                Move_Backward(1500, 1500, 30);
+                Read_IR_Sensor(sensors);
+                type = Detect_NodeType(sensors);
+            }
+            Move_Forward(1500, 1500, 750);
+            Motor_Stop(500);
+            break;
+        default:
+            TurnOn_Led(LED_WHITE);
+            break;
+        }
     }
 }
 
@@ -160,6 +509,34 @@ int main(void) {
     IR_Init();
     Switch_Init();
 
-    Move_Forward(500);
-    TimerA2_Init(task, 5000);
+    // Stack_Init_With_Answer();
+
+    int sw_left, sw_right, i;
+    sw_left = sw_right = 1;
+
+    // Phase 1: Escape and Memorize
+/*    while (sw_left)
+        sw_left = Read_Switch_Right();
+
+    for (i = 0; i < 3; i++) {
+        TurnOn_Led(LED_GREEN);
+        Clock_Delay1ms(500);
+        TurnOff_Led();
+        Clock_Delay1ms(500);
+    }
+    Phase_One();*/
+
+    // Phase 2: Escape via the shortest path
+    top = -1;
+    Stack_Init_With_Answer();
+    while (sw_right)
+        sw_right = Read_Switch_Left();
+
+    for (i = 0; i < 3; i++) {
+        TurnOn_Led(LED_GREEN);
+        Clock_Delay1ms(500);
+        TurnOff_Led();
+        Clock_Delay1ms(500);
+    }
+    Phase_Two();
 }
