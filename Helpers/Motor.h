@@ -8,7 +8,7 @@
 #ifndef MOTOR_H_
 #define MOTOR_H_
 
-#define ROTATION_TIME 320
+#define ROTATION_TIME 330
 
 #include "msp.h"
 #include ".\Timer.h"

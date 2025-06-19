@@ -162,57 +162,73 @@ void Toggle_Led_By_NodeType(uint8_t sensors[8]) {
 }
 
 
+NodeType Move_Backward_Straight(void) {
+    if (type == Node_Straight)
+        Align_And_Move_Backward(sensors);
+    else
+        Move_Backward(1300, 1300, 30);
+
+    Read_IR_Sensor(sensors);
+    type = Detect_NodeType(sensors);
+
+    return type;
+}
+
+
+NodeType Move_Forward_Straight(void) {
+    if (type == Node_Straight)
+        Align_And_Move_Forward(sensors);
+    else
+        Move_Forward(1300, 1300, 30);
+
+    Read_IR_Sensor(sensors);
+    type = Detect_NodeType(sensors);
+
+    return type;
+}
+
+
 void Process_Backtrack_Branch(void) {
     Direction _dir = dir_stack[top];
     if (_dir == Dir_L) {
-        while (type != Node_Left) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type != Node_Left)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
         Rotate_Left90(sensors);
         Rotate_Left90(sensors);
         Motor_Stop(100);
 
-        while (type == Node_Wall) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
-
-        Move_Backward(1500, 1500, 100);
+        while (type == Node_Wall)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
-        while (type != Node_Right) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type != Node_Right)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
-        while (type == Node_Right) {
-            if (type == Node_Straight)
-                Align_And_Move_Forward(sensors);
-            else
-                Move_Forward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type == Node_Right)
+            type = Move_Forward_Straight();
         Motor_Stop(100);
 
         dir_stack[top] = Dir_R;
-    } else if (_dir == Dir_R) {
+    }
+    else if (_dir == Dir_R) {
+        while (type != Node_Right)
+            type = Move_Backward_Straight();
+        Motor_Stop(100);
+
+        Rotate_Left90(sensors);
+        Motor_Stop(100);
+
+        while (type != Node_Branch)
+            type = Move_Backward_Straight();
+        Motor_Stop(100);
+
+        while (type == Node_Branch)
+            type = Move_Backward_Straight();
+        Motor_Stop(100);
+
         top--;
     }
 }
@@ -221,14 +237,11 @@ void Process_Backtrack_Branch(void) {
 void Process_Backtrack_Left(void) {
     Direction _dir = dir_stack[top];
     if (_dir == Dir_L) {
-        while (type != Node_Branch && type != Node_Left) {
-            Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type != Node_Branch && type != Node_Left)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
-        Move_Forward(1500, 1500, 750);
+        Move_Forward(1300, 1300, 750);
         Motor_Stop(100);
 
         Rotate_Right90(sensors);
@@ -236,25 +249,14 @@ void Process_Backtrack_Left(void) {
 
         dir_stack[top] = Dir_S;
     } else if (_dir == Dir_S) {
-        while (type != Node_Left) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type != Node_Left)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
-        while (type == Node_Left) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type == Node_Left)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
+
         top--;
     }
 }
@@ -263,69 +265,39 @@ void Process_Backtrack_Left(void) {
 void Process_Backtrack_Right(void) {
     Direction _dir = dir_stack[top];
     if (_dir == Dir_R) {
-        while (type != Node_Branch) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
-        Motor_Stop(100);
-
-        while (type == Node_Branch) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type != Node_Branch)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
         Rotate_Left90(sensors);
+        Motor_Stop(100);
+
+        while (type != Node_Right)
+            type = Move_Backward_Straight();
+        Motor_Stop(100);
+
+        while (type == Node_Right)
+            type = Move_Backward_Straight();
+        Motor_Stop(100);
 
         top--;
-        while (type != node_stack[top]) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
     } else if (_dir == Dir_S) {
-        while (type != Node_Right) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type != Node_Right)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
-        while (type == Node_Right) {
-            if (type == Node_Straight)
-                Align_And_Move_Backward(sensors);
-            else
-                Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type == Node_Right)
+            type = Move_Backward_Straight();
         Motor_Stop(100);
 
-        Move_Forward(1500, 1500, 650);
+        Move_Forward(1500, 1500, 750);
         Motor_Stop(100);
 
         Rotate_Right90(sensors);
         Motor_Stop(100);
 
-        while (type == Node_Wall) {
-            Move_Backward(1500, 1500, 30);
-            Read_IR_Sensor(sensors);
-            type = Detect_NodeType(sensors);
-        }
+        while (type == Node_Wall)
+            type = Move_Backward_Straight();
 
         dir_stack[top] = Dir_R;
     }
@@ -349,7 +321,7 @@ void Escape_And_Memorize_Maze(uint8_t sensors[8]) {
     switch (type) {
     case Node_Branch:
         while (type == Node_Branch) {
-            Move_Backward(1500, 1500, 30);
+            Move_Backward(1300, 1300, 30);
             Read_IR_Sensor(sensors);
             type = Detect_NodeType(sensors);
         }
@@ -367,7 +339,7 @@ void Escape_And_Memorize_Maze(uint8_t sensors[8]) {
         break;
     case Node_Left:
         while (type == Node_Left) {
-            Move_Backward(1500, 1500, 30);
+            Move_Backward(1300, 1300, 30);
             Read_IR_Sensor(sensors);
             type = Detect_NodeType(sensors);
         }
@@ -450,7 +422,7 @@ void Phase_Two(void) {
                 Move_Backward(1000, 1000, 1000);
                 Motor_Stop(100);
             } else {
-                Move_Forward(1500, 1500, 30);
+                Move_Forward(1300, 1300, 30);
             }
             Read_IR_Sensor(sensors);
             type = Detect_NodeType(sensors);
@@ -474,7 +446,7 @@ void Phase_Two(void) {
         case Dir_R:
             TurnOn_Led(LED_BLUE);
             while (type == node_stack[i]) {
-                Move_Backward(1500, 1500, 30);
+                Move_Backward(1300, 1300, 30);
                 Read_IR_Sensor(sensors);
                 type = Detect_NodeType(sensors);
             }
@@ -487,7 +459,7 @@ void Phase_Two(void) {
         case Dir_S:
             TurnOn_Led(LED_GREEN);
             while (type == node_stack[i]) {
-                Move_Backward(1500, 1500, 30);
+                Move_Backward(1300, 1300, 30);
                 Read_IR_Sensor(sensors);
                 type = Detect_NodeType(sensors);
             }
@@ -515,7 +487,7 @@ int main(void) {
     sw_left = sw_right = 1;
 
     // Phase 1: Escape and Memorize
-/*    while (sw_left)
+    while (sw_left)
         sw_left = Read_Switch_Right();
 
     for (i = 0; i < 3; i++) {
@@ -524,7 +496,7 @@ int main(void) {
         TurnOff_Led();
         Clock_Delay1ms(500);
     }
-    Phase_One();*/
+    Phase_One();
 
     // Phase 2: Escape via the shortest path
     top = -1;

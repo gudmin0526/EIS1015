@@ -143,7 +143,7 @@ void Align_And_Move_Forward(uint8_t sensors[8]) {
     if (error == -1)
         Move_Backward(900, 900, 90);
     else if (abs_error < 23)
-        Move_Forward(1500, 1500, 30);
+        Move_Forward(1400, 1400, 30);
     else if (abs_error < 47) {
         if (error > 0)
             Rotate_Left(1000, 1000, 45);
@@ -151,9 +151,9 @@ void Align_And_Move_Forward(uint8_t sensors[8]) {
             Rotate_Right(1000, 1000, 45);
     } else if (abs_error < 142) {
         if (error > 0)
-            Rotate_Left(1000, 1000, 30);
+            Rotate_Left(1000, 1000, 60);
         else
-            Rotate_Right(1000, 1000, 30);
+            Rotate_Right(1000, 1000, 60);
     }
     Motor_Stop(0);
 }
@@ -166,7 +166,7 @@ void Align_And_Move_Backward(uint8_t sensors[8]) {
     if (error == -1)
         Move_Forward(900, 900, 90);
     else if (abs_error < 23)
-        Move_Backward(1500, 1500, 30);
+        Move_Backward(1400, 1400, 30);
     else if (abs_error < 47) {
         if (error > 0)
             Rotate_Right(1000, 1000, 45);
@@ -174,9 +174,9 @@ void Align_And_Move_Backward(uint8_t sensors[8]) {
             Rotate_Left(1000, 1000, 45);
     } else if (abs_error < 142) {
         if (error > 0)
-            Rotate_Right(1000, 1000, 30);
+            Rotate_Right(1000, 1000, 60);
         else
-            Rotate_Left(1000, 1000, 30);
+            Rotate_Left(1000, 1000, 60);
     }
     Motor_Stop(0);
 }
