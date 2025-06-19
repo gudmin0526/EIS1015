@@ -21,6 +21,6 @@
 void Led_Init(void);
 void TurnOn_Led(int color);
 void TurnOff_Led(void);
-void Toggle_Led(int color);
+void Toggle_Led(int color, int count);
 
 #endif /* LED_H_ */

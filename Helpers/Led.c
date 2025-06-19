@@ -16,12 +16,12 @@ void TurnOff_Led(void) {
     P2->OUT &= ~0x07;
 }
 
-void Toggle_Led(int color) {
+void Toggle_Led(int color, int count) {
     int i;
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < count; i++) {
         TurnOn_Led(color);
-        Clock_Delay1ms(500);
+        Clock_Delay1ms(1000);
         TurnOff_Led();
-        Clock_Delay1ms(500);
+        Clock_Delay1ms(1000);
     }
 }

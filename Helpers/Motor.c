@@ -102,7 +102,7 @@ void Motor_Stop(uint16_t time) {
 
 int Compute_Forward_CenteringError(uint8_t sensors[8]) {
     // 0, 1: Right, 6, 7: Left
-    int weights[8] = {0, 0, -142, -47, 47, 142, 0, 0};
+    int weights[8] = {0, 0, -16, -7, 7, 16, 0, 0};
     int sum, active;
     sum = active = 0;
 
@@ -120,7 +120,7 @@ int Compute_Forward_CenteringError(uint8_t sensors[8]) {
 
 int Compute_Backward_CenteringError(uint8_t sensors[8]) {
     // 0, 1: Right, 6, 7: Left
-    int weights[8] = {0, 0, 142, 47, -47, -142, 0, 0};
+    int weights[8] = {0, 0, 16, 7, -7, -16, 0, 0};
     int sum, active;
     sum = active = 0;
 
@@ -140,20 +140,23 @@ void Align_And_Move_Forward(uint8_t sensors[8]) {
     int error = Compute_Forward_CenteringError(sensors);
     uint8_t abs_error = abs(error);
 
-    if (error == -1)
-        Move_Backward(900, 900, 90);
-    else if (abs_error < 23)
-        Move_Forward(1400, 1400, 30);
-    else if (abs_error < 47) {
+    if (abs_error < 3)
+        Move_Forward(BASE_SPEED, BASE_SPEED, 30);
+    else if (abs_error < 7) {
         if (error > 0)
             Rotate_Left(1000, 1000, 45);
         else
             Rotate_Right(1000, 1000, 45);
-    } else if (abs_error < 142) {
+    } else if (abs_error < 16) {
         if (error > 0)
             Rotate_Left(1000, 1000, 60);
         else
             Rotate_Right(1000, 1000, 60);
+    } else {
+        if (error > 0)
+            Rotate_Left(1000, 1000, 75);
+        else
+            Rotate_Right(1000, 1000, 75);
     }
     Motor_Stop(0);
 }
@@ -163,20 +166,23 @@ void Align_And_Move_Backward(uint8_t sensors[8]) {
     int error = Compute_Backward_CenteringError(sensors);
     uint8_t abs_error = abs(error);
 
-    if (error == -1)
-        Move_Forward(900, 900, 90);
-    else if (abs_error < 23)
-        Move_Backward(1400, 1400, 30);
-    else if (abs_error < 47) {
+    if (abs_error < 3)
+        Move_Backward(1500, 1500, 30);
+    else if (abs_error < 7) {
         if (error > 0)
             Rotate_Right(1000, 1000, 45);
         else
             Rotate_Left(1000, 1000, 45);
-    } else if (abs_error < 142) {
+    } else if (abs_error < 16) {
         if (error > 0)
             Rotate_Right(1000, 1000, 60);
         else
             Rotate_Left(1000, 1000, 60);
+    } else {
+        if (error > 0)
+            Rotate_Right(1000, 1000, 75);
+        else
+            Rotate_Left(1000, 1000, 75);
     }
     Motor_Stop(0);
 }
