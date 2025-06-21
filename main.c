@@ -459,10 +459,15 @@ int main(void) {
     while (sw_right)
         sw_right = Read_Switch_Right();
 
-    while (!sw_right)
-        sw_left = Read_Switch_Left();
-
+    for (i = 0; i < 3; i++) {
+        TurnOn_Led(LED_GREEN);
+        Clock_Delay1ms(500);
+        TurnOff_Led();
+        Clock_Delay1ms(500);
+    }
     Phase_Three();
+
     Move_Forward(BASE_SPEED, BASE_SPEED, 200);
+
     Motor_Stop(0);
 }
