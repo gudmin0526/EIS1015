@@ -8,8 +8,8 @@
 #ifndef MOTOR_H_
 #define MOTOR_H_
 
-#define ROTATION_TIME 350
-#define BASE_SPEED 1500
+#define ROTATION_TIME 370
+#define BASE_SPEED 2000
 #define JUMP_SPEED 1600
 
 #include "msp.h"

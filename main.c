@@ -58,16 +58,16 @@ NodeType node_map[256] = {
     [0b10001111] = Node_Right,   // 143
     [0b10011111] = Node_Right,   // 159
     [0b01011111] = Node_Right,   //  95
-    [0b01110000] = Node_Left,    // 112
-    [0b01110100] = Node_Left,    // 116
     [0b01111000] = Node_Left,
+    [0b01111001] = Node_Left,
     [0b01111100] = Node_Left,    // 124
+    [0b01111101] = Node_Branch,  // 125
     [0b11110100] = Node_Left,    // 244
     [0b11111000] = Node_Left,    // 248
     [0b11111100] = Node_Left,    // 252
     [0b11101100] = Node_Left,    // 236
     [0b11110000] = Node_Left,    // 240
-    [0b01111101] = Node_Branch,  // 125
+    [0b11110001] = Node_Left,
     [0b01111111] = Node_Branch,  // 127
     [0b11111001] = Node_Branch,  // 249
     [0b11111010] = Node_Branch,  // 250
@@ -122,11 +122,11 @@ NodeType Move_Backward_Straight(void) {
     Read_IR_Sensor(sensors);
     type = Detect_NodeType(sensors);
 
-    if (type == Node_Straight)
+/*    if (type == Node_Straight)
         Align_And_Move_Backward(sensors);
     else
-        Move_Backward(BASE_SPEED, BASE_SPEED, 30);
-
+        Move_Backward(BASE_SPEED, BASE_SPEED, 30);*/
+    Move_Backward(BASE_SPEED, BASE_SPEED, 30);
     Read_IR_Sensor(sensors);
     type = Detect_NodeType(sensors);
 
@@ -154,21 +154,17 @@ void Process_Backtrack_Branch(void) {
     Direction _dir = dir_stack[top];
     Toggle_Led(LED_RED, backtrack_count);
     if (_dir == Dir_L) {
-        while (type != Node_Left && type != Node_Branch)
-            type = Move_Backward_Straight();
-        Motor_Stop(500);
-
         Rotate_Left90(sensors);
         Rotate_Left90(sensors);
         Motor_Stop(500);
 
-        while (type == Node_Wall)
-            type = Move_Backward_Straight();
-        Motor_Stop(500);
+        while (type == Node_Right && type == Node_Branch)
+             type = Move_Backward_Straight();
+         Motor_Stop(500);
 
-        while (type != Node_Right)
-            type = Move_Backward_Straight();
-        Motor_Stop(500);
+        while (type != Node_Right && type != Node_Branch)
+             type = Move_Forward_Straight();
+         Motor_Stop(500);
 
         while (type == Node_Right)
             type = Move_Forward_Straight();
@@ -209,7 +205,7 @@ void Process_Backtrack_Left(void) {
             type = Move_Backward_Straight();
         Motor_Stop(500);
 
-        Move_Forward(JUMP_SPEED, JUMP_SPEED, 750);
+        Move_Forward(JUMP_SPEED, JUMP_SPEED, 400);
         Motor_Stop(500);
 
         Rotate_Right90(sensors);
@@ -222,10 +218,6 @@ void Process_Backtrack_Left(void) {
         dir_stack[top] = Dir_S;
     } else if (_dir == Dir_S) {
         while (type != Node_Left)
-            type = Move_Backward_Straight();
-        Motor_Stop(500);
-
-        while (type == Node_Left)
             type = Move_Backward_Straight();
         Motor_Stop(500);
 
@@ -295,7 +287,7 @@ int Escape_And_Memorize_Maze(uint8_t sensors[8]) {
     int cur;
     switch (type) {
     case Node_Branch:
-        TurnOn_Led(LED_WHITE);
+        ///TurnOn_Led(LED_WHITE);
         while (type == Node_Branch)
             Move_Backward_Straight();
         Move_Forward(JUMP_SPEED, JUMP_SPEED, 750);
@@ -311,7 +303,7 @@ int Escape_And_Memorize_Maze(uint8_t sensors[8]) {
         dir_stack[top] = Dir_L;
         break;
     case Node_Left:
-        TurnOn_Led(LED_RED);
+        //TurnOn_Led(LED_RED);
         while (type == Node_Left)
             type = Move_Backward_Straight();
         Move_Forward(JUMP_SPEED, JUMP_SPEED, 750);
@@ -327,7 +319,7 @@ int Escape_And_Memorize_Maze(uint8_t sensors[8]) {
         dir_stack[top] = Dir_L;
         break;
     case Node_Right:
-        TurnOn_Led(LED_BLUE);
+        //TurnOn_Led(LED_BLUE);
         Move_Forward(JUMP_SPEED, JUMP_SPEED, 300);
         Motor_Stop(500);
 
@@ -335,7 +327,7 @@ int Escape_And_Memorize_Maze(uint8_t sensors[8]) {
         dir_stack[top] = Dir_S;
         break;
     case Node_Straight:
-        TurnOn_Led(LED_GREEN);
+        //TurnOn_Led(LED_GREEN);
         while (type == Node_Straight)
             type = Move_Forward_Straight();
         Motor_Stop(500);
@@ -371,7 +363,7 @@ void Phase_One_Two(void) {
     type = Detect_NodeType(sensors);
 
     /* --- Maze Escape and Memorize --- */
-    int escape_flag = 1;
+    int escape_flag = 0;
     while (!escape_flag) {
         Read_IR_Sensor(sensors);
         escape_flag = Escape_And_Memorize_Maze(sensors);
@@ -390,60 +382,51 @@ void Phase_Three(void) {
             if (type == Node_Straight) {
                 Align_And_Move_Forward(sensors);
             } else if (type == Node_Wall) {
-                Move_Backward(1000, 1000, 1000);
+                Move_Backward(JUMP_SPEED, JUMP_SPEED, 400);
+                Motor_Stop(10);
             } else {
-                Move_Forward(BASE_SPEED, BASE_SPEED, 30);
+                Move_Forward(1500, 1500, 30);
             }
             Read_IR_Sensor(sensors);
             type = Detect_NodeType(sensors);
         }
-        Motor_Stop(500);
+        Motor_Stop(10);
 
         switch (dir_stack[i]) {
         case Dir_L:
-            TurnOn_Led(LED_RED);
+            //TurnOn_Led(LED_RED);
             while (type == node_stack[i])
-                Move_Backward_Straight();
-            Motor_Stop(500);
+                type = Move_Backward_Straight();
+            Motor_Stop(10);
 
             Move_Forward(JUMP_SPEED, JUMP_SPEED, 750);
-            Motor_Stop(500);
+            Motor_Stop(10);
 
             Rotate_Left90(sensors);
-            Motor_Stop(500);
-
-            while (type == Node_Wall)
-                type = Move_Backward_Straight();
-            Motor_Stop(500);
+            Motor_Stop(10);
             break;
         case Dir_R:
-            TurnOn_Led(LED_BLUE);
+            //TurnOn_Led(LED_BLUE);
             while (type == node_stack[i])
-                Move_Backward_Straight();
-            Motor_Stop(500);
+                type = Move_Backward_Straight();
+            Motor_Stop(10);
 
-            Move_Forward(JUMP_SPEED, JUMP_SPEED, 750);
-            Motor_Stop(500);
+            Move_Forward(JUMP_SPEED, JUMP_SPEED, 600);
+            Motor_Stop(10);
 
             Rotate_Right90(sensors);
-            Motor_Stop(500);
-
-            while (type == Node_Wall)
-                type = Move_Backward_Straight();
-            Motor_Stop(500);
+            Motor_Stop(10);
             break;
         case Dir_S:
-            TurnOn_Led(LED_GREEN);
-            while (type == node_stack[i]) {
-                Move_Backward(BASE_SPEED, BASE_SPEED, 30);
-                Read_IR_Sensor(sensors);
-                type = Detect_NodeType(sensors);
-            }
+            //TurnOn_Led(LED_GREEN);
+            while (type == node_stack[i])
+                type = Move_Backward_Straight();
+            Motor_Stop(10);
+
             Move_Forward(JUMP_SPEED, JUMP_SPEED, 750);
-            Motor_Stop(500);
+            Motor_Stop(10);
             break;
         default:
-            TurnOn_Led(LED_WHITE);
             break;
         }
     }
@@ -476,11 +459,10 @@ int main(void) {
     while (sw_right)
         sw_right = Read_Switch_Right();
 
-    for (i = 0; i < 3; i++) {
-        TurnOn_Led(LED_GREEN);
-        Clock_Delay1ms(500);
-        TurnOff_Led();
-        Clock_Delay1ms(500);
-    }
+    while (!sw_right)
+        sw_left = Read_Switch_Left();
+
     Phase_Three();
+    Move_Forward(BASE_SPEED, BASE_SPEED, 200);
+    Motor_Stop(0);
 }
